@@ -3,12 +3,15 @@ mod gui;
 mod map;
 mod components;
 mod entities;
+mod systems;
+mod manager;
 mod actions;
 #[macro_use]
 mod lib;
 
 use entities::Entity;
-use actions::EffectEvent;
+use actions::Action;
+use actions::Event;
 use tcod::console::*;
 
 // actual size of the window
@@ -33,8 +36,9 @@ pub struct GameState {
     player_x: i32,
     player_y: i32,
     main_menu: gui::Menu,
-    action_queue: Vec<Entity>,
-    effect_queue: Vec<EffectEvent>
+    current_action: actions::Action,
+    turn_queue: Vec<Entity>,
+    event_queue: Vec<Event>
     // hold map
 }
 
@@ -50,15 +54,13 @@ fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, game: &mut GameState){
                         // start game
                         *state = RunState::ActiveGame;
         },
-
-        RunState::LoadGame => {},
         RunState::ActiveGame  => {
             tcod.render_game(game);
 
             // iterate through turn order list
-            for actor in game.action_queue.iter_mut() {
+            for actor in game.turn_queue.iter_mut() {
 
-                for event in game.effect_queue.iter_mut() {
+                for event in game.event_queue.iter_mut() {
                     // handle effects queue from actions
                 }
 
@@ -66,7 +68,9 @@ fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, game: &mut GameState){
 
             },
         RunState::Inventory  => {},
+        RunState::LoadGame => {},
         RunState::SaveGame  => {},
+        RunState::Options => {},
         RunState::GameOver => {},
         _ => {}
     }
@@ -94,8 +98,9 @@ fn main() {
     let mut game = GameState{player_x: SCREEN_WIDTH/2,
                              player_y: SCREEN_HEIGHT/2,
                              main_menu,
-                             action_queue: Vec::new(),
-                             effect_queue: Vec::new()};
+                             current_action: Action::NoAction,
+                             turn_queue: Vec::new(),
+                             event_queue: Vec::new()};
 
     let mut state = RunState::MainMenu;
     loop {

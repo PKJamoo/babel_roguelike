@@ -1,11 +1,11 @@
 use crate::components::*;
-use bit_set::BitSet as BitSet;
+pub use fixedbitset::FixedBitSet as BitSet;
 
 pub const MAX_ENTITIES: u64 = 4096;
 pub type Entity = u64;
 
 
-pub struct Entity_Manager {
+pub struct EntityManager {
 
     available_entities: Vec<Entity>,
     entity_signatures: Vec<BitSet>,
@@ -14,10 +14,10 @@ pub struct Entity_Manager {
 
 }
 
-impl Entity_Manager {
+impl EntityManager {
 
-    pub fn new() -> Entity_Manager {
-        Entity_Manager {
+    pub fn new() -> EntityManager {
+        EntityManager {
             available_entities: Self::init_available_entities(),
             entity_signatures: Self::init_entity_signatures(),
             living_entity_count: 0

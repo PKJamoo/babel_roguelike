@@ -1,6 +1,7 @@
 use crate::gui::Tcod as Tcod;
 use crate::RunState as RunState;
-use crate::actions::ActionEvent as ActionEvent;
+use crate::actions::*;
+use crate::entities::Entity;
 use tcod::input::Key;
 use tcod::input::KeyCode::*;
 
@@ -12,25 +13,25 @@ pub fn decrement_cursor(cursor: &mut i16, menu_size: i16) {
     if *cursor == 0 { *cursor = menu_size;} else { *cursor -= 1;}
 }
 
-pub fn read_keys(tcod: &mut Tcod, id: i32) ->  ActionEvent{
+pub fn read_keys(tcod: &mut Tcod, id: Entity) ->  Action{
     let key = tcod.root.wait_for_keypress(true);
     match key {
         Key { code: Escape, .. } => std::process::exit(0x0), // exit game
         // movement keys
-        Key { code: Up, .. } => ActionEvent::MoveAction{id: id, x: 0, y: -1},
-        Key { code: Down, .. } => ActionEvent::MoveAction{id: id, x: 0, y: 1},
-        Key { code: Left, .. } => ActionEvent::MoveAction{id: id, x: -1, y: 0},
-        Key { code: Right, .. } => ActionEvent::MoveAction{id: id, x: 1, y: 0},
+        Key { code: Up, .. } => Action::MoveAction{id: id, x: 0, y: -1},
+        Key { code: Down, .. } => Action::MoveAction{id: id, x: 0, y: 1},
+        Key { code: Left, .. } => Action::MoveAction{id: id, x: -1, y: 0},
+        Key { code: Right, .. } => Action::MoveAction{id: id, x: 1, y: 0},
         //numpad keys (handled counterclockwise)
-        Key { code: NumPad1, .. } => ActionEvent::MoveAction{id: id, x: -1, y: 1},
-        Key { code: NumPad2, .. } => ActionEvent::MoveAction{id: id, x: 0, y: 1},
-        Key { code: NumPad3, .. } => ActionEvent::MoveAction{id: id, x: 1, y: 1},
-        Key { code: NumPad6, .. } => ActionEvent::MoveAction{id: id, x: 1, y: 0},
-        Key { code: NumPad9, .. } => ActionEvent::MoveAction{id: id, x: 1, y: -1},
-        Key { code: NumPad8, .. } => ActionEvent::MoveAction{id: id, x: 0, y: -1},
-        Key { code: NumPad7, .. } => ActionEvent::MoveAction{id: id, x: -1, y: -1},
-        Key { code: NumPad4, .. } => ActionEvent::MoveAction{id: id, x: -1, y: 0},
-        _ => ActionEvent::NoEvent
+        Key { code: NumPad1, .. } => Action::MoveAction{id: id, x: -1, y: 1},
+        Key { code: NumPad2, .. } => Action::MoveAction{id: id, x: 0, y: 1},
+        Key { code: NumPad3, .. } => Action::MoveAction{id: id, x: 1, y: 1},
+        Key { code: NumPad6, .. } => Action::MoveAction{id: id, x: 1, y: 0},
+        Key { code: NumPad9, .. } => Action::MoveAction{id: id, x: 1, y: -1},
+        Key { code: NumPad8, .. } => Action::MoveAction{id: id, x: 0, y: -1},
+        Key { code: NumPad7, .. } => Action::MoveAction{id: id, x: -1, y: -1},
+        Key { code: NumPad4, .. } => Action::MoveAction{id: id, x: -1, y: 0},
+        _ => Action::NoAction
     }
 }
 

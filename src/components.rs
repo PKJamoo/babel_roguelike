@@ -80,51 +80,61 @@ impl<T: Component + Copy> ComponentStorage<T> {
 }
 
 
-pub struct ComponentManager<T: Component + Copy> {
+pub struct ComponentManager{
 
     component_types: HashMap<TypeId, ComponentType>,
-    component_arrays: HashMap<TypeId, ComponentStorage<T>>,
+    component_arrays: HashMap<TypeId, ComponentStorage>,
     next_component_type: ComponentType
 
 }
 
-impl <'a, T: 'static +  Component + Copy> ComponentManager<T> {
-    pub fn get_component_array(&mut self) ->  &mut ComponentStorage<T> {
+impl ComponentManager{
+
+    pub fn new() -> ComponentManager {
+        ComponentManager {
+            component_types: HashMap::new(),
+            component_arrays: HashMap::new(),
+            next_component_type: 0
+        }
+
+    }
+
+    pub fn get_component_array<T>(&mut self) ->  &mut ComponentStorage<T> {
         let typeid = TypeId::of::<T>();
         assert!(self.component_types.get(&typeid).unwrap() != self.component_types.iter().last().unwrap().1, "COMPONENT NOT REGISTERED");
         return self.component_arrays.get_mut(&typeid).unwrap();
     }
 
-    pub fn register_component(&mut self){
+    pub fn register_component<T: Component + Copy>(&mut self){
         let typeid = TypeId::of::<T>();
         assert!(self.component_types.get(&typeid).unwrap() == self.component_types.iter().last().unwrap().1, "COMPONENT TYPE ALREADY REGISTERED");
         self.component_arrays.insert(typeid, ComponentStorage::<T>::new());
         self.next_component_type += 1;
     }
 
-    pub fn get_component_type(&mut self) -> ComponentType {
+    pub fn get_component_type<T: Component + Copy + 'static>(&mut self) -> ComponentType {
         let typeid = TypeId::of::<T>();
         assert!(self.component_types.get(&typeid).unwrap() != self.component_types.iter().last().unwrap().1, "COMPONENT TYPE ALREADY REGISTERED");
         return *self.component_types.get(&typeid).unwrap();
     }
 
-    pub fn add_component(&mut self, entity: Entity, component: T) {
+    pub fn add_component<T: Component + Copy>(&mut self, entity: Entity, component: T) {
         self.get_component_array().insert_data(&entity, component);
 
     }
 
-    pub fn remove_component(&mut self, entity: Entity) {
-        self.get_component_array().remove_data(&entity);
+    pub fn remove_component<T: Component + Copy>(&mut self, entity: Entity) {
+        self.get_component_array::<T>().remove_data(&entity);
 
     }
 
-    pub fn get_component(&mut self, entity: Entity) -> &T {
+    pub fn get_component<T: Component + Copy>(&mut self, entity: Entity) -> &T {
         let component: &T = self.get_component_array().get_data(&entity);
         return component;
 
     }
 
-    pub fn EntityDestroyed(&mut self, entity: Entity){
+    pub fn destroy_entity(&mut self, entity: Entity){
         for storage in self.component_arrays.iter_mut() {
             storage.1.entity_destroyed(&entity);
         }

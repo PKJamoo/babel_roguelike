@@ -1,8 +1,10 @@
-pub enum ActionEvent {
-    MoveAction{id: i32, x: i32, y: i32},
-    NoEvent
+use crate::entities::*;
+
+pub enum Action {
+    MoveAction{id: Entity, x: i32, y: i32},
+    NoAction
 }
 
-pub enum EffectEvent {
-
+pub enum Event {
+    
 }
