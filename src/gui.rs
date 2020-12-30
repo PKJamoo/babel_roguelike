@@ -1,6 +1,7 @@
 use tcod::colors::*;
 use tcod::console::*;
 use super::{SCREEN_HEIGHT, SCREEN_WIDTH, GameState};
+use crate::map::TileType;
 
 pub struct Tcod {
     pub root: Root,
@@ -39,16 +40,26 @@ impl Tcod {
         // for entities -> render all objects in view
         self.con.set_default_foreground(WHITE);
         self.con.clear();
-        self.con
-            .put_char(game.player_x, game.player_y, '@', BackgroundFlag::None);
+
+        // Render map
+        for tile in game.current_level.get_tiles_in_view(game.player_x, game.player_y).iter() {
+          let tileChar: char;
+          let tileColor: Color;
+          match tile.tileType {
+              TileType::Ground => {tileChar = '.'; tileColor = LIGHTEST_GREY},
+              TileType::Water => {tileChar = '*'; tileColor = BLUE},
+              TileType::Wall => {tileChar = 'X'; tileColor = WHITE},
+          }
+          self.con.put_char_ex(tile.x, tile.y, tileChar, tileColor, BLACK);
+        }
+
+        // Render player
+        self.con.put_char(game.player_x, game.player_y, '@', BackgroundFlag::None);
 
 
         blit( &self.con, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT),
             &mut self.root, (0, 0), 1.0, 1.0,
         );
-
-
-
 
         self.root.flush();
     }

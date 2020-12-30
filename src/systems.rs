@@ -1,8 +1,7 @@
-use crate::components::*;
-use crate::entities::{Entity, BitSet};
+use crate::entities::{BitSet};
 use crate::actions::Event;
 use std::any::TypeId as TypeId;
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap};
 
 pub trait System {
     fn new() -> Self;

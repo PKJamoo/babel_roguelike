@@ -9,7 +9,7 @@ pub struct Coordinator {
     pub system_manager: Box<SystemManager>
 }
 
-pub impl Coordinator {
+impl Coordinator {
 
     fn new() -> Coordinator {
         Coordinator {
@@ -29,25 +29,25 @@ pub impl Coordinator {
         self.system_manager.destroy_entity(entity);
     }
 
-    fn register_component<T: Component>(&self) {
-        self.component_manager.register_component<T>();
+    fn register_component<T: Component + Copy>(&self) {
+        self.component_manager.register_component::<T>();
     }
 
-    fn add_component<T>(&self, entity: Entity, component T) {
-        self.component_manager.add_component<T>(entity, component);
+    fn add_component<T: Component + Copy>(&self, entity: Entity, component: T) {
+        self.component_manager.add_component::<T>(entity, component);
         
         let mut signature = self.entity_manager.get_signature(entity);
-        signature.set(self.component_manager.get_component_type<T>(), true);
+        signature.set(self.component_manager.get_component_type::<T>(), true);
         
-        self.entity_manager(entity, signature);
+        //self.entity_manager(entity, signature);
         self.system_manager.entity_signature_changed(entity, signature);
     }
 
-    fn remove_component(&self, entity: Entity) {
-        self.component_manager.remove_component<T>(entity);
+    fn remove_component<T: Component + Copy>(&self, entity: Entity) {
+        self.component_manager.remove_component::<T>(entity);
 
-        let mut signature = self.entity_manager.get_signature(entity);
-        signature.set(self.componenet_manager.get)
+        //let mut signature = self.entity_manager.get_signature(entity);
+        //signature.set(self.component_manager.get)
     }
 }
 /*

@@ -79,7 +79,7 @@ impl<T: Component + Copy> ComponentStorage<T> {
     }
 }
 
-
+/**
 pub struct ComponentManager{
 
     component_types: HashMap<TypeId, ComponentType>,
@@ -142,3 +142,5 @@ impl ComponentManager{
     }
 
 }
+*/
+pub struct CommentOut {}

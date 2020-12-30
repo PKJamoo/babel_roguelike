@@ -3,8 +3,8 @@ mod gui;
 mod map;
 mod components;
 mod entities;
-mod systems;
-mod manager;
+//mod systems;
+//mod manager;
 mod actions;
 #[macro_use]
 mod lib;
@@ -12,6 +12,7 @@ mod lib;
 use entities::Entity;
 use actions::Action;
 use actions::Event;
+use map::Map;
 use tcod::console::*;
 
 // actual size of the window
@@ -37,6 +38,7 @@ pub struct GameState {
     player_y: i32,
     main_menu: gui::Menu,
     current_action: actions::Action,
+    current_level: map::Map,
     turn_queue: Vec<Entity>,
     event_queue: Vec<Event>
     // hold map
@@ -56,6 +58,14 @@ fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, game: &mut GameState){
         },
         RunState::ActiveGame  => {
             tcod.render_game(game);
+            // TODO: the 0 here is hardcoded/fake this should be replaced with a real EntityId
+            let act = player::read_keys(tcod, 0);
+
+            // TODO: this should be handled by the event queue most likely
+            if let actions::Action::MoveAction { id, x, y } = act {
+                game.player_x += x;
+                game.player_y += y;
+            }
 
             // iterate through turn order list
             for actor in game.turn_queue.iter_mut() {
@@ -99,13 +109,12 @@ fn main() {
                              player_y: SCREEN_HEIGHT/2,
                              main_menu,
                              current_action: Action::NoAction,
+                             current_level: Map::new(SCREEN_WIDTH, SCREEN_HEIGHT),
                              turn_queue: Vec::new(),
                              event_queue: Vec::new()};
 
     let mut state = RunState::MainMenu;
-    loop {
+    while !tcod.root.window_closed() {
         game_loop(&mut state, &mut tcod, &mut game);
     }
-
-
 }
