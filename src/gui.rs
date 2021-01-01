@@ -34,7 +34,7 @@ impl Tcod {
         self.root.flush();
     }
 
-    pub fn render_game(&mut self, game: & GameState) {
+    pub fn render_game(&mut self, game: &mut GameState) {
 
         // for map -> render all tiles in view
         // for entities -> render all objects in view
@@ -42,12 +42,22 @@ impl Tcod {
         self.con.clear();
 
         // Render map
+        for tile in game.current_level.visited.iter() {
+          let tileChar: char;
+          let tileColor: Color;
+          match tile.tileType {
+              TileType::Ground => {tileChar = '.'; tileColor = LIGHT_GREY},
+              TileType::Water => {tileChar = '*'; tileColor = BLUE},
+              TileType::Wall => {tileChar = 'X'; tileColor = LIGHT_GREY},
+          }
+          self.con.put_char_ex(tile.x, tile.y, tileChar, tileColor, BLACK);
+        }
         for tile in game.current_level.get_tiles_in_view(game.player_x, game.player_y).iter() {
           let tileChar: char;
           let tileColor: Color;
           match tile.tileType {
               TileType::Ground => {tileChar = '.'; tileColor = LIGHTEST_GREY},
-              TileType::Water => {tileChar = '*'; tileColor = BLUE},
+              TileType::Water => {tileChar = '*'; tileColor = LIGHT_BLUE},
               TileType::Wall => {tileChar = 'X'; tileColor = WHITE},
           }
           self.con.put_char_ex(tile.x, tile.y, tileChar, tileColor, BLACK);

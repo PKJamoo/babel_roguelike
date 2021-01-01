@@ -62,7 +62,7 @@ fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, game: &mut GameState){
             let act = player::read_keys(tcod, 0);
 
             // TODO: this should be handled by the event queue most likely
-            if let actions::Action::MoveAction { id, x, y } = act {
+            if let actions::Action::MoveAction { id: _, x, y } = act {
                 game.player_x += x;
                 game.player_y += y;
             }

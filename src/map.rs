@@ -1,5 +1,6 @@
 use std::convert::TryInto;
 use std::cmp;
+use std::collections::HashSet;
 
 const VIEW_DIST: i32 = 10;
 const VIEW_DIST_SQ: i32 = VIEW_DIST * VIEW_DIST;
@@ -8,6 +9,7 @@ pub struct Map {
     width: i32,
     height: i32,
     terrain: Vec<TileType>,
+    pub visited: HashSet<Tile>
 }
 
 // TODO: handle maps that are bigger than the screen width (i.e. handle wrapping)
@@ -19,6 +21,10 @@ impl Map {
               let tile: TileType;
               if i == 0 || j == 0 || i == width - 1 || j == height - 1 {
                   tile = TileType::Wall;
+              } else if j == 18 && (i == 38 || i == 39 || i == 40 || i == 41 || i == 42) {
+                  tile = TileType::Wall;
+              } else if j == 32 && (i == 38 || i == 39 || i == 41 || i == 42) {
+                  tile = TileType::Wall;
               } else if (i - 20).pow(2) + (j - 20).pow(2) < 100 {
                   tile = TileType::Water;
               } else {
@@ -29,34 +35,44 @@ impl Map {
       }
       return Map{width: width,
                  height: height,
-                 terrain: terrain};
+                 terrain: terrain,
+                 visited: HashSet::new()};
   }
 
-  pub fn get_tiles_in_view(&self, x: i32, y: i32) -> Vec<Tile> {
+  pub fn get_tiles_in_view(&mut self, x: i32, y: i32) -> Vec<Tile> {
       let mut inView = Vec::new();
-      for j in y-VIEW_DIST..y+VIEW_DIST+1 {
-          for i in x-VIEW_DIST..x+VIEW_DIST+1 {
-              // clamp values between [0, width/height)
-              let col = cmp::min(cmp::max(i, 0), self.width-1);
-              let row = cmp::min(cmp::max(j, 0), self.height-1);
+      // clamp values between [0, width/height)
+      let rowStart = cmp::max(y-VIEW_DIST, 0);
+      let rowEnd = cmp::min(y+VIEW_DIST + 1, self.height);
+      let colStart = cmp::max(x-VIEW_DIST, 0);
+      let colEnd = cmp::min(x+VIEW_DIST + 1, self.width);
+      for row in rowStart..rowEnd {
+          for col in colStart..colEnd {
               // Euclidean distance
-              if (col - x).pow(2) + (row - y).pow(2) < VIEW_DIST_SQ {
+              if self.get_distance(col, row, x, y) < VIEW_DIST_SQ {
                   let index: usize = (col + row * self.width).try_into().unwrap();
-                  inView.push(Tile{x: col, y: row, tileType: self.terrain[index]});
+                  let tile = Tile{x: col, y: row, tileType: self.terrain[index]};
+                  inView.push(tile);
+                  self.visited.insert(tile);
               }
           }
       }
       return inView;
   }
+
+  fn get_distance(&self, x0: i32, y0: i32, x1: i32, y1: i32) -> i32 {
+      return (x0 - x1).pow(2) + (y0 - y1).pow(2);
+  }
 }
 
+#[derive(Copy, Clone, Hash, Eq, PartialEq)]
 pub struct Tile {
     pub x: i32,
     pub y: i32,
     pub tileType: TileType,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Hash, Eq, PartialEq)]
 pub enum TileType {
     Ground,
     Water,
