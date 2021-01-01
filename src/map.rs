@@ -40,24 +40,24 @@ impl Map {
   }
 
   pub fn get_tiles_in_view(&mut self, x: i32, y: i32) -> Vec<Tile> {
-      let mut inView = Vec::new();
+      let mut in_view = Vec::new();
       // clamp values between [0, width/height)
-      let rowStart = cmp::max(y-VIEW_DIST, 0);
-      let rowEnd = cmp::min(y+VIEW_DIST + 1, self.height);
-      let colStart = cmp::max(x-VIEW_DIST, 0);
-      let colEnd = cmp::min(x+VIEW_DIST + 1, self.width);
-      for row in rowStart..rowEnd {
-          for col in colStart..colEnd {
+      let row_start = cmp::max(y-VIEW_DIST, 0);
+      let row_end = cmp::min(y+VIEW_DIST + 1, self.height);
+      let col_start = cmp::max(x-VIEW_DIST, 0);
+      let col_end = cmp::min(x+VIEW_DIST + 1, self.width);
+      for row in row_start..row_end {
+          for col in col_start..col_end {
               // Euclidean distance
               if self.get_distance(col, row, x, y) < VIEW_DIST_SQ {
                   let index: usize = (col + row * self.width).try_into().unwrap();
-                  let tile = Tile{x: col, y: row, tileType: self.terrain[index]};
-                  inView.push(tile);
+                  let tile = Tile{x: col, y: row, tile_type: self.terrain[index]};
+                  in_view.push(tile);
                   self.visited.insert(tile);
               }
           }
       }
-      return inView;
+      return in_view;
   }
 
   fn get_distance(&self, x0: i32, y0: i32, x1: i32, y1: i32) -> i32 {
@@ -69,7 +69,7 @@ impl Map {
 pub struct Tile {
     pub x: i32,
     pub y: i32,
-    pub tileType: TileType,
+    pub tile_type: TileType,
 }
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq)]

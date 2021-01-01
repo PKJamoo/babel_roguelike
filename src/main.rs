@@ -8,10 +8,7 @@ mod lib;
 
 use specs::{World, WorldExt, Builder, Entity};
 use components::{Position, Sprite};
-use actions::Action;
-use actions::Event;
 use map::Map;
-use tcod::console::*;
 use tcod::colors::*;
 
 // actual size of the window
@@ -33,13 +30,8 @@ pub enum RunState {
 
 
 pub struct GameState {
-    player_x: i32,
-    player_y: i32,
     main_menu: gui::Menu,
-    current_action: actions::Action,
     current_level: map::Map,
-    event_queue: Vec<Event>
-    // hold map
 }
 
 fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, game: &mut GameState, ecs: &mut World){
@@ -60,9 +52,9 @@ fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, game: &mut GameState, e
             let player_id = ecs.fetch::<Entity>();
             let act = player::read_keys(tcod, *player_id);
             // TODO: this should be handled by the event queue most likely
-            if let actions::Action::MoveAction { id, x, y } = act {
+            if let actions::Action::MoveAction { id: _, x, y } = act {
                 let mut pos_store = ecs.write_storage::<Position>();
-                let mut player_pos = pos_store.get_mut(*player_id);
+                let player_pos = pos_store.get_mut(*player_id);
                 if let Some(player_pos) = player_pos{
                 player_pos.x += x;
                 player_pos.y += y;
@@ -102,13 +94,7 @@ fn main() {
                              options: vec_of_strings!["New Game", "Load Game", "Options", "Quit"]
     };
 
-    let mut game = GameState{player_x: SCREEN_WIDTH/2,
-        player_y: SCREEN_HEIGHT/2,
-        main_menu,
-        current_action: Action::NoAction,
-        current_level: Map::new(SCREEN_WIDTH, SCREEN_HEIGHT),
-        event_queue: Vec::new()};
-
+    let mut game = GameState{main_menu, current_level: Map::new(SCREEN_WIDTH, SCREEN_HEIGHT)};
     // gui init code
     tcod::system::set_fps(LIMIT_FPS);
     let mut tcod = gui::Tcod::new();

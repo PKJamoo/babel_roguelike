@@ -1,3 +1,4 @@
+#[allow(unused_macros)]
 macro_rules! vec_of_strings {
     // match a list of expressions separated by comma:
     ($($str:expr),*) => ({

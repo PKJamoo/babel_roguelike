@@ -58,14 +58,14 @@ impl Tcod {
 
         // Render map
         for tile in game.current_level.visited.iter() {
-          let tileChar: char;
-          let tileColor: Color;
-          match tile.tileType {
-              TileType::Ground => {tileChar = '.'; tileColor = LIGHT_GREY},
-              TileType::Water => {tileChar = '.'; tileColor = BLUE},
-              TileType::Wall => {tileChar = 'X'; tileColor = LIGHT_GREY},
+          let tile_char: char;
+          let tile_color: Color;
+          match tile.tile_type {
+              TileType::Ground => {tile_char = '.'; tile_color = LIGHT_GREY},
+              TileType::Water => {tile_char = '.'; tile_color = BLUE},
+              TileType::Wall => {tile_char = 'X'; tile_color = LIGHT_GREY},
           }
-          self.con.put_char_ex(tile.x, tile.y, tileChar, tileColor, BLACK);
+          self.con.put_char_ex(tile.x, tile.y, tile_char, tile_color, BLACK);
         }
 
         let player_id = ecs.fetch::<Entity>();
@@ -73,14 +73,14 @@ impl Tcod {
         let player_pos = pos_store.get(*player_id);
         if let Some(player_pos) = player_pos {
             for tile in game.current_level.get_tiles_in_view(player_pos.x, player_pos.y).iter() {
-              let tileChar: char;
-              let tileColor: Color;
-              match tile.tileType {
-                  TileType::Ground => {tileChar = '.'; tileColor = LIGHTEST_GREY},
-                  TileType::Water => {tileChar = '.'; tileColor = LIGHT_BLUE},
-                  TileType::Wall => {tileChar = 'X'; tileColor = WHITE},
+              let tile_char: char;
+              let tile_color: Color;
+              match tile.tile_type {
+                  TileType::Ground => {tile_char = '.'; tile_color = LIGHTEST_GREY},
+                  TileType::Water => {tile_char = '.'; tile_color = LIGHT_BLUE},
+                  TileType::Wall => {tile_char = 'X'; tile_color = WHITE},
               }
-              self.con.put_char_ex(tile.x, tile.y, tileChar, tileColor, BLACK);
+              self.con.put_char_ex(tile.x, tile.y, tile_char, tile_color, BLACK);
             }
 
             // Render player
