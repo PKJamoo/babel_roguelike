@@ -51,6 +51,10 @@ impl Tcod {
     }
 
     pub fn render_game(&mut self, game: & GameState, ecs: &mut World) {
+        let player_id = ecs.fetch::<Entity>();
+        let pos_store = ecs.read_storage::<Position>();
+        let player_pos = pos_store.get(*player_id);
+        if let Some(player_pos) = player_pos{
 
         // for map -> render all tiles in view
         // for entities -> render all objects in view
@@ -58,7 +62,7 @@ impl Tcod {
         self.con.clear();
 
         // Render map
-        for tile in game.current_level.get_tiles_in_view(game.player_x, game.player_y).iter() {
+        for tile in game.current_level.get_tiles_in_view(player_pos.x, player_pos.y).iter() {
           let tileChar: char;
           let tileColor: Color;
           match tile.tileType {
@@ -70,14 +74,12 @@ impl Tcod {
         }
 
         // Render player
-        let player_id = ecs.fetch::<Entity>();
-        let pos_store = ecs.read_storage::<Position>();
-        let player_pos = pos_store.get(*player_id);
-        if let Some(player_pos) = player_pos{
+
+
             self.con.put_char(player_pos.x, player_pos.y, '@', BackgroundFlag::None);
         }
 
-        
+
         blit( &self.con, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT),
             &mut self.root, (0, 0), 1.0, 1.0,
         );
