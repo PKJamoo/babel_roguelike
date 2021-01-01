@@ -1,9 +1,10 @@
 use tcod::colors::*;
 use tcod::console::*;
 use specs::{World, WorldExt, Entity};
-use crate::components::{Position};
-use super::{SCREEN_HEIGHT, SCREEN_WIDTH, GameState};
+use super::{SCREEN_HEIGHT, SCREEN_WIDTH, Map};
 use crate::map::TileType;
+use crate::components::{Position};
+
 
 
 pub struct Tcod {
@@ -17,6 +18,18 @@ pub struct Menu {
     pub cursor_index: i16,
     pub menu_size: i16,
     pub options: Vec<String>
+}
+
+impl Menu {
+    pub fn new(num_options: i16, options: Vec<String>) -> Self{
+        
+        Menu{
+            cursor_index: 0,
+            menu_size: num_options,
+            options: options
+        }
+
+    }
 }
 
 impl Tcod {
@@ -34,7 +47,8 @@ impl Tcod {
     return Tcod { root, con };
     }
 
-    pub fn render_main_menu(&mut self, menu: Menu) {
+    pub fn render_main_menu(&mut self, ecs: &mut  World) {
+        let menu = ecs.fetch::<Menu>();
         self.con.set_default_background(BLACK);
         self.con.set_default_foreground(WHITE);
         self.con.set_alignment(TextAlignment::Center);
@@ -50,14 +64,15 @@ impl Tcod {
         self.root.flush();
     }
 
-    pub fn render_game(&mut self, game: &mut GameState, ecs: &mut World) {
+    pub fn render_game(&mut self,  ecs: &mut World) {
         // for map -> render all tiles in view
         // for entities -> render all objects in view
         self.con.set_default_foreground(WHITE);
         self.con.clear();
 
         // Render map
-        for tile in game.current_level.visited.iter() {
+        let mut current_level = ecs.write_resource::<Map>();
+        for tile in current_level.visited.iter() {
           let tile_char: char;
           let tile_color: Color;
           match tile.tile_type {
@@ -72,7 +87,7 @@ impl Tcod {
         let pos_store = ecs.read_storage::<Position>();
         let player_pos = pos_store.get(*player_id);
         if let Some(player_pos) = player_pos {
-            for tile in game.current_level.get_tiles_in_view(player_pos.x, player_pos.y).iter() {
+            for tile in (*current_level).get_tiles_in_view(player_pos.x, player_pos.y).iter() {
               let tile_char: char;
               let tile_color: Color;
               match tile.tile_type {

@@ -1,9 +1,10 @@
 use crate::gui::Tcod as Tcod;
 use crate::RunState as RunState;
 use crate::actions::*;
+use crate::gui::Menu;
 use tcod::input::Key;
 use tcod::input::KeyCode::*;
-use specs::{Entity};
+use specs::{Entity, World, WorldExt};
 
 pub fn increment_cursor(cursor: &mut i16, menu_size: i16){
     if *cursor == menu_size { *cursor = 0; } else { *cursor += 1; }
@@ -35,19 +36,22 @@ pub fn read_keys(tcod: &mut Tcod, id: Entity) ->  Action{
     }
 }
 
-pub fn handle_main_menu_events(tcod: &mut Tcod, cursor: &mut i16, menu_size: i16) -> RunState {
+pub fn handle_main_menu_events(tcod: &mut Tcod, ecs: &mut World) -> RunState {
+    let mut menu = ecs.write_resource::<Menu>();
+    let menu_size = menu.menu_size;
+
     let key = tcod.root.wait_for_keypress(true);
     match key {
         Key {code: Up, ..} => {
-                               decrement_cursor(cursor, menu_size);
+                               decrement_cursor(&mut (*menu).cursor_index, menu_size);
                                RunState::MainMenu
                             },
         Key {code: Down, ..} => {
-                                 increment_cursor(cursor, menu_size);
+                                 increment_cursor(&mut (*menu).cursor_index, menu_size);
                                  RunState::MainMenu
                                 },
         Key {code: Enter, ..} => {// return new RunState of chosen menu item
-                                  match cursor {
+                                  match (*menu).cursor_index {
                                       0 => RunState::NewGame,
                                       1 => RunState::LoadGame,
                                       2 => RunState::Options,

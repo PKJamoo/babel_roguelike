@@ -28,17 +28,12 @@ pub enum RunState {
     GameOver
 }
 
-
-pub struct GameState {
-    main_menu: gui::Menu,
-    current_level: map::Map,
-}
-
-fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, game: &mut GameState, ecs: &mut World){
+fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, ecs: &mut World){
     match state {
         RunState::MainMenu  => {
-                        tcod.render_main_menu(game.main_menu.clone());
-                        *state = player::handle_main_menu_events(tcod, &mut game.main_menu.cursor_index, game.main_menu.menu_size);
+                        tcod.render_main_menu(ecs);
+                        *state = player::handle_main_menu_events(tcod, ecs);
+                        
                      },
         RunState::NewGame => {
                         // opening cinematic
@@ -47,7 +42,7 @@ fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, game: &mut GameState, e
                         *state = RunState::ActiveGame;
         },
         RunState::ActiveGame  => {
-            tcod.render_game(game, ecs);
+            tcod.render_game(ecs);
             // TODO: the 0 here is hardcoded/fake this should be replaced with a real EntityId
             let player_id = ecs.fetch::<Entity>();
             let act = player::read_keys(tcod, *player_id);
@@ -88,19 +83,19 @@ fn main() {
     ecs.insert(player_entity);
     
     // set gamestate
-    let main_menu = gui::Menu{
-                             cursor_index: 0,
-                             menu_size: 3,
-                             options: vec_of_strings!["New Game", "Load Game", "Options", "Quit"]
-    };
 
-    let mut game = GameState{main_menu, current_level: Map::new(SCREEN_WIDTH, SCREEN_HEIGHT)};
+    let main_menu = gui::Menu::new(3, vec_of_strings!["New Game", "Load Game", "Options", "Quit"]);
+    let current_level = Map::new(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    ecs.insert(main_menu);
+    ecs.insert(current_level);
+
     // gui init code
     tcod::system::set_fps(LIMIT_FPS);
     let mut tcod = gui::Tcod::new();
 
     let mut state = RunState::MainMenu;
     while !tcod.root.window_closed() {
-        game_loop(&mut state, &mut tcod, &mut game, &mut ecs);
+        game_loop(&mut state, &mut tcod, &mut ecs);
     }
 }
