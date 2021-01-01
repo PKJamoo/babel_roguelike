@@ -1,7 +1,10 @@
 use tcod::colors::*;
 use tcod::console::*;
+use specs::{World, WorldExt, Entity};
+use crate::components::{Position};
 use super::{SCREEN_HEIGHT, SCREEN_WIDTH, GameState};
 use crate::map::TileType;
+
 
 pub struct Tcod {
     pub root: Root,
@@ -17,6 +20,19 @@ pub struct Menu {
 }
 
 impl Tcod {
+
+    pub fn new() -> Self {
+        let root = Root::initializer()
+        .font("arial10x10.png", FontLayout::Tcod)
+        .font_type(FontType::Greyscale)
+        .size(SCREEN_WIDTH, SCREEN_HEIGHT)
+        .title("BABEL")
+        .init();
+
+    let con = Offscreen::new(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    return Tcod { root, con };
+    }
 
     pub fn render_main_menu(&mut self, menu: Menu) {
         self.con.set_default_background(BLACK);
@@ -34,8 +50,7 @@ impl Tcod {
         self.root.flush();
     }
 
-    pub fn render_game(&mut self, game: &mut GameState) {
-
+    pub fn render_game(&mut self, game: &mut GameState, ecs: &mut World) {
         // for map -> render all tiles in view
         // for entities -> render all objects in view
         self.con.set_default_foreground(WHITE);
@@ -47,24 +62,30 @@ impl Tcod {
           let tileColor: Color;
           match tile.tileType {
               TileType::Ground => {tileChar = '.'; tileColor = LIGHT_GREY},
-              TileType::Water => {tileChar = '*'; tileColor = BLUE},
+              TileType::Water => {tileChar = '.'; tileColor = BLUE},
               TileType::Wall => {tileChar = 'X'; tileColor = LIGHT_GREY},
           }
           self.con.put_char_ex(tile.x, tile.y, tileChar, tileColor, BLACK);
         }
-        for tile in game.current_level.get_tiles_in_view(game.player_x, game.player_y).iter() {
-          let tileChar: char;
-          let tileColor: Color;
-          match tile.tileType {
-              TileType::Ground => {tileChar = '.'; tileColor = LIGHTEST_GREY},
-              TileType::Water => {tileChar = '*'; tileColor = LIGHT_BLUE},
-              TileType::Wall => {tileChar = 'X'; tileColor = WHITE},
-          }
-          self.con.put_char_ex(tile.x, tile.y, tileChar, tileColor, BLACK);
-        }
 
-        // Render player
-        self.con.put_char(game.player_x, game.player_y, '@', BackgroundFlag::None);
+        let player_id = ecs.fetch::<Entity>();
+        let pos_store = ecs.read_storage::<Position>();
+        let player_pos = pos_store.get(*player_id);
+        if let Some(player_pos) = player_pos {
+            for tile in game.current_level.get_tiles_in_view(player_pos.x, player_pos.y).iter() {
+              let tileChar: char;
+              let tileColor: Color;
+              match tile.tileType {
+                  TileType::Ground => {tileChar = '.'; tileColor = LIGHTEST_GREY},
+                  TileType::Water => {tileChar = '.'; tileColor = LIGHT_BLUE},
+                  TileType::Wall => {tileChar = 'X'; tileColor = WHITE},
+              }
+              self.con.put_char_ex(tile.x, tile.y, tileChar, tileColor, BLACK);
+            }
+
+            // Render player
+            self.con.put_char(player_pos.x, player_pos.y, '@', BackgroundFlag::None);
+        }
 
 
         blit( &self.con, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT),

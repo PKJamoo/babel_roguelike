@@ -2,18 +2,17 @@ mod player;
 mod gui;
 mod map;
 mod components;
-mod entities;
-//mod systems;
-//mod manager;
 mod actions;
 #[macro_use]
 mod lib;
 
-use entities::Entity;
+use specs::{World, WorldExt, Builder, Entity};
+use components::{Position, Sprite};
 use actions::Action;
 use actions::Event;
 use map::Map;
 use tcod::console::*;
+use tcod::colors::*;
 
 // actual size of the window
 const SCREEN_WIDTH: i32 = 80;
@@ -39,12 +38,11 @@ pub struct GameState {
     main_menu: gui::Menu,
     current_action: actions::Action,
     current_level: map::Map,
-    turn_queue: Vec<Entity>,
     event_queue: Vec<Event>
     // hold map
 }
 
-fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, game: &mut GameState){
+fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, game: &mut GameState, ecs: &mut World){
     match state {
         RunState::MainMenu  => {
                         tcod.render_main_menu(game.main_menu.clone());
@@ -57,26 +55,20 @@ fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, game: &mut GameState){
                         *state = RunState::ActiveGame;
         },
         RunState::ActiveGame  => {
-            tcod.render_game(game);
+            tcod.render_game(game, ecs);
             // TODO: the 0 here is hardcoded/fake this should be replaced with a real EntityId
-            let act = player::read_keys(tcod, 0);
-
+            let player_id = ecs.fetch::<Entity>();
+            let act = player::read_keys(tcod, *player_id);
             // TODO: this should be handled by the event queue most likely
-            if let actions::Action::MoveAction { id: _, x, y } = act {
-                game.player_x += x;
-                game.player_y += y;
-            }
-
-            // iterate through turn order list
-            for actor in game.turn_queue.iter_mut() {
-
-                for event in game.event_queue.iter_mut() {
-                    // handle effects queue from actions
+            if let actions::Action::MoveAction { id, x, y } = act {
+                let mut pos_store = ecs.write_storage::<Position>();
+                let mut player_pos = pos_store.get_mut(*player_id);
+                if let Some(player_pos) = player_pos{
+                player_pos.x += x;
+                player_pos.y += y;
                 }
-
             }
-
-            },
+        },
         RunState::Inventory  => {},
         RunState::LoadGame => {},
         RunState::SaveGame  => {},
@@ -88,33 +80,41 @@ fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, game: &mut GameState){
 
 
 fn main() {
-    tcod::system::set_fps(LIMIT_FPS);
 
-    let root = Root::initializer()
-        .font("arial10x10.png", FontLayout::Tcod)
-        .font_type(FontType::Greyscale)
-        .size(SCREEN_WIDTH, SCREEN_HEIGHT)
-        .title("BABEL")
-        .init();
+    // init ecs
+    let mut ecs = World::new();
 
-    let con = Offscreen::new(SCREEN_WIDTH, SCREEN_HEIGHT);
+    // register component types with ECS
+    ecs.register::<Position>();
+    ecs.register::<Sprite>();
 
-    let mut tcod = gui::Tcod { root, con };
+    //create player entity
+    let player_entity = ecs.create_entity().with(Position{x: SCREEN_WIDTH/2, y: SCREEN_HEIGHT/2})
+                                             .with(Sprite{sprite: '@', color: WHITE }).build();
+
+    // insert entity id as resource for easy access
+    ecs.insert(player_entity);
+    
+    // set gamestate
     let main_menu = gui::Menu{
                              cursor_index: 0,
                              menu_size: 3,
                              options: vec_of_strings!["New Game", "Load Game", "Options", "Quit"]
     };
+
     let mut game = GameState{player_x: SCREEN_WIDTH/2,
-                             player_y: SCREEN_HEIGHT/2,
-                             main_menu,
-                             current_action: Action::NoAction,
-                             current_level: Map::new(SCREEN_WIDTH, SCREEN_HEIGHT),
-                             turn_queue: Vec::new(),
-                             event_queue: Vec::new()};
+        player_y: SCREEN_HEIGHT/2,
+        main_menu,
+        current_action: Action::NoAction,
+        current_level: Map::new(SCREEN_WIDTH, SCREEN_HEIGHT),
+        event_queue: Vec::new()};
+
+    // gui init code
+    tcod::system::set_fps(LIMIT_FPS);
+    let mut tcod = gui::Tcod::new();
 
     let mut state = RunState::MainMenu;
     while !tcod.root.window_closed() {
-        game_loop(&mut state, &mut tcod, &mut game);
+        game_loop(&mut state, &mut tcod, &mut game, &mut ecs);
     }
 }

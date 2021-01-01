@@ -1,9 +1,9 @@
 use crate::gui::Tcod as Tcod;
 use crate::RunState as RunState;
 use crate::actions::*;
-use crate::entities::Entity;
 use tcod::input::Key;
 use tcod::input::KeyCode::*;
+use specs::{Entity};
 
 pub fn increment_cursor(cursor: &mut i16, menu_size: i16){
     if *cursor == menu_size { *cursor = 0; } else { *cursor += 1; }
