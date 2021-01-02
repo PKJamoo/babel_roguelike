@@ -64,9 +64,12 @@ fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, ecs: &mut World){
                     if let actions::Action::MoveAction { id: _, x, y } = act {
                         let mut pos_store = ecs.write_storage::<Position>();
                         let player_pos = pos_store.get_mut(*player_id);
-                        if let Some(player_pos) = player_pos{
-                        player_pos.x += x;
-                        player_pos.y += y;
+                        if let Some(player_pos) = player_pos {
+                          let  current_level = ecs.fetch::<Map>();
+                          if current_level.can_move_to(player_pos.x + x, player_pos.y + y) {
+                            player_pos.x += x;
+                            player_pos.y += y;
+                          }
                         }
                     }
                 }
