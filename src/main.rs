@@ -5,9 +5,11 @@ mod components;
 mod actions;
 #[macro_use]
 mod lib;
+mod turnsystem;
+use turnsystem::TurnSystem;
 
-use specs::{World, WorldExt, Builder, Entity};
-use components::{Position, Sprite};
+use specs::{World, WorldExt, Builder, Entity, RunNow};
+use components::{Position, Sprite, Actor, Speed};
 use map::Map;
 use tcod::colors::*;
 
@@ -18,6 +20,7 @@ const LIMIT_FPS: i32 = 60; // 60 frames-per-second maximum
 
 pub enum RunState {
     PlayerTurn,
+    AITurn,
     ActiveGame,
     Inventory,
     MainMenu,
@@ -26,6 +29,14 @@ pub enum RunState {
     SaveGame,
     Options,
     GameOver
+}
+
+fn run_systems(ecs: &mut World) {
+    let mut turn_system = TurnSystem{};
+    turn_system.run_now(ecs);
+
+    ecs.maintain();
+
 }
 
 fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, ecs: &mut World){
@@ -43,25 +54,32 @@ fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, ecs: &mut World){
         },
         RunState::ActiveGame  => {
             tcod.render_game(ecs);
-            // TODO: the 0 here is hardcoded/fake this should be replaced with a real EntityId
+            run_systems(ecs);
             let player_id = ecs.fetch::<Entity>();
-            let act = player::read_keys(tcod, *player_id);
-            // TODO: this should be handled by the event queue most likely
-            if let actions::Action::MoveAction { id: _, x, y } = act {
-                let mut pos_store = ecs.write_storage::<Position>();
-                let player_pos = pos_store.get_mut(*player_id);
-                if let Some(player_pos) = player_pos{
-                player_pos.x += x;
-                player_pos.y += y;
+            let mut turn_queue = ecs.write_resource::<Vec<Entity>>();
+            while !((*turn_queue).is_empty()) {
+                if (*turn_queue).remove(0) == (*player_id) {
+                    let act = player::read_keys(tcod, *player_id);
+                    // TODO: this should be handled by the event queue most likely
+                    if let actions::Action::MoveAction { id: _, x, y } = act {
+                        let mut pos_store = ecs.write_storage::<Position>();
+                        let player_pos = pos_store.get_mut(*player_id);
+                        if let Some(player_pos) = player_pos{
+                        player_pos.x += x;
+                        player_pos.y += y;
+                        }
+                    }
                 }
+
             }
         },
+        RunState::PlayerTurn => {},
+        RunState::AITurn => {},
         RunState::Inventory  => {},
         RunState::LoadGame => {},
         RunState::SaveGame  => {},
         RunState::Options => {},
-        RunState::GameOver => {},
-        _ => {}
+        RunState::GameOver => {}
     }
 }
 
@@ -74,21 +92,26 @@ fn main() {
     // register component types with ECS
     ecs.register::<Position>();
     ecs.register::<Sprite>();
+    ecs.register::<Actor>();
+    ecs.register::<Speed>();
 
     //create player entity
-    let player_entity = ecs.create_entity().with(Position{x: SCREEN_WIDTH/2, y: SCREEN_HEIGHT/2})
-                                             .with(Sprite{sprite: '@', color: WHITE }).build();
+    let player_entity = ecs.create_entity().with(Actor{action_points:0, threshold: 5})
+                                            .with(Position{x: SCREEN_WIDTH/2, y: SCREEN_HEIGHT/2})
+                                            .with(Sprite{sprite: '@', color: WHITE })
+                                            .with(Speed{speed: 1}).build();
 
     // insert entity id as resource for easy access
     ecs.insert(player_entity);
     
-    // set gamestate
-
+    // create gamestate resources
     let main_menu = gui::Menu::new(3, vec_of_strings!["New Game", "Load Game", "Options", "Quit"]);
     let current_level = Map::new(SCREEN_WIDTH, SCREEN_HEIGHT);
+    let turn_queue : Vec<Entity> = Vec::new();
 
     ecs.insert(main_menu);
     ecs.insert(current_level);
+    ecs.insert(turn_queue);
 
     // gui init code
     tcod::system::set_fps(LIMIT_FPS);

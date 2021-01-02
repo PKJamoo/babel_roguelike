@@ -14,3 +14,16 @@ pub struct Sprite {
     pub sprite: char,
     pub color: Color
 }
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+pub struct Actor{
+    pub action_points: i32,
+    pub threshold: i32
+}
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+pub struct Speed{
+    pub speed: i32
+}
