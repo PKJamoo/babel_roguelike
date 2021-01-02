@@ -2,7 +2,7 @@ use std::convert::TryInto;
 use std::cmp;
 use std::collections::HashSet;
 
-const VIEW_DIST: i32 = 6;
+const VIEW_DIST: i32 = 9;
 const VIEW_DIST_SQ: i32 = VIEW_DIST * VIEW_DIST;
 
 pub struct Map {
@@ -43,16 +43,16 @@ impl Map {
       let mut in_view = HashSet::new();
       // clamp values between [0, width/height)
       let row_start = cmp::max(y-VIEW_DIST, 0);
-      let row_end = cmp::min(y+VIEW_DIST + 1, self.height);
+      let row_end = cmp::min(y+VIEW_DIST, self.height - 1);
       let col_start = cmp::max(x-VIEW_DIST, 0);
-      let col_end = cmp::min(x+VIEW_DIST + 1, self.width);
+      let col_end = cmp::min(x+VIEW_DIST, self.width - 1);
 
-      for row in row_start..row_end {
+      for row in row_start..row_end+1 {
           self.find_visible_tiles_between(x, y, col_start, row, VIEW_DIST_SQ, &mut in_view);
           self.find_visible_tiles_between(x, y, col_end, row, VIEW_DIST_SQ, &mut in_view);
       }
 
-      for col in col_start..col_end {
+      for col in col_start..col_end+1 {
           self.find_visible_tiles_between(x, y, col, row_start, VIEW_DIST_SQ, &mut in_view);
           self.find_visible_tiles_between(x, y, col, row_end, VIEW_DIST_SQ, &mut in_view);
       }
@@ -74,10 +74,10 @@ impl Map {
     let mut err = dx + dy;
     let mut e2;
 
-    while (x0 != x1 || y0 != y1) && self.get_distance_sq(start_x, start_y, x0, y0) < length_sq {
+    while self.get_distance_sq(start_x, start_y, x0, y0) < length_sq {
         let tile_type = self.terrain[self.get_index(x0, y0)];
         visible.insert(Tile{x: x0, y: y0, tile_type: tile_type});
-        if self.tile_blocks_vision(tile_type) {
+        if self.tile_blocks_vision(tile_type) || (x0 == x1 && y0 == y1) {
             break;
         }
         e2 = 2*err;
