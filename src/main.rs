@@ -59,21 +59,25 @@ fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, ecs: &mut World){
             let mut turn_queue = ecs.write_resource::<Vec<Entity>>();
             while !((*turn_queue).is_empty()) {
                 if (*turn_queue).remove(0) == (*player_id) {
-                    let act = player::read_keys(tcod, *player_id);
-                    // TODO: this should be handled by the event queue most likely
-                    if let actions::Action::MoveAction { id: _, x, y } = act {
-                        let mut pos_store = ecs.write_storage::<Position>();
-                        let player_pos = pos_store.get_mut(*player_id);
-                        if let Some(player_pos) = player_pos{
-                        player_pos.x += x;
-                        player_pos.y += y;
-                        }
-                    }
+                    *state = RunState::PlayerTurn;
                 }
 
             }
         },
-        RunState::PlayerTurn => {},
+        RunState::PlayerTurn => {
+            let player_id = ecs.fetch::<Entity>();
+            let act = player::read_keys(tcod, *player_id);
+            // TODO: this should be handled by the event queue most likely
+            if let actions::Action::MoveAction { id: _, x, y } = act {
+                let mut pos_store = ecs.write_storage::<Position>();
+                let player_pos = pos_store.get_mut(*player_id);
+                if let Some(player_pos) = player_pos{
+                    player_pos.x += x;
+                    player_pos.y += y;
+                }
+                *state = RunState::ActiveGame;
+            }
+        },
         RunState::AITurn => {},
         RunState::Inventory  => {},
         RunState::LoadGame => {},
