@@ -2,7 +2,7 @@ use std::convert::TryInto;
 use std::cmp;
 use std::collections::HashSet;
 
-const VIEW_DIST: i32 = 10;
+const VIEW_DIST: i32 = 6;
 const VIEW_DIST_SQ: i32 = VIEW_DIST * VIEW_DIST;
 
 pub struct Map {
@@ -39,29 +39,70 @@ impl Map {
                  visited: HashSet::new()};
   }
 
-  pub fn get_tiles_in_view(&mut self, x: i32, y: i32) -> Vec<Tile> {
-      let mut in_view = Vec::new();
+  pub fn get_tiles_in_view(&mut self, x: i32, y: i32) -> HashSet<Tile> {
+      let mut in_view = HashSet::new();
       // clamp values between [0, width/height)
       let row_start = cmp::max(y-VIEW_DIST, 0);
       let row_end = cmp::min(y+VIEW_DIST + 1, self.height);
       let col_start = cmp::max(x-VIEW_DIST, 0);
       let col_end = cmp::min(x+VIEW_DIST + 1, self.width);
+
       for row in row_start..row_end {
-          for col in col_start..col_end {
-              // Euclidean distance
-              if self.get_distance(col, row, x, y) < VIEW_DIST_SQ {
-                  let index: usize = (col + row * self.width).try_into().unwrap();
-                  let tile = Tile{x: col, y: row, tile_type: self.terrain[index]};
-                  in_view.push(tile);
-                  self.visited.insert(tile);
-              }
-          }
+          self.find_visible_tiles_between(x, y, col_start, row, VIEW_DIST_SQ, &mut in_view);
+          self.find_visible_tiles_between(x, y, col_end, row, VIEW_DIST_SQ, &mut in_view);
+      }
+
+      for col in col_start..col_end {
+          self.find_visible_tiles_between(x, y, col, row_start, VIEW_DIST_SQ, &mut in_view);
+          self.find_visible_tiles_between(x, y, col, row_end, VIEW_DIST_SQ, &mut in_view);
+      }
+
+      for tile in in_view.iter() {
+          self.visited.insert(*tile);
       }
       return in_view;
   }
 
-  fn get_distance(&self, x0: i32, y0: i32, x1: i32, y1: i32) -> i32 {
+  fn find_visible_tiles_between(&self, start_x: i32, start_y: i32, x1: i32, y1: i32, length_sq: i32, visible: &mut HashSet<Tile>) {
+    // Bresenham line algorithm (http://members.chello.at/~easyfilter/bresenham.html)
+    let mut x0 = start_x;
+    let mut y0 = start_y;
+    let dx = (x1 - x0).abs();
+    let dy = -(y1 - y0).abs();
+    let sign_x = if x0 < x1 { 1 } else { -1 };
+    let sign_y = if y0 < y1 { 1 } else { -1 };
+    let mut err = dx + dy;
+    let mut e2;
+
+    while (x0 != x1 || y0 != y1) && self.get_distance_sq(start_x, start_y, x0, y0) < length_sq {
+        let tile_type = self.terrain[self.get_index(x0, y0)];
+        visible.insert(Tile{x: x0, y: y0, tile_type: tile_type});
+        if self.tile_blocks_vision(tile_type) {
+            break;
+        }
+        e2 = 2*err;
+        if e2 >= dy {
+            err += dy;
+            x0 += sign_x;
+        }
+        if e2 <= dx {
+            err += dx;
+            y0 += sign_y;
+        }
+    }
+  }
+
+  fn get_distance_sq(&self, x0: i32, y0: i32, x1: i32, y1: i32) -> i32 {
+      // Euclidean distance
       return (x0 - x1).pow(2) + (y0 - y1).pow(2);
+  }
+
+  fn get_index(&self, x0: i32, y0: i32) -> usize {
+      return (x0 + y0 * self.width).try_into().unwrap();
+  }
+
+  fn tile_blocks_vision(&self, tile_type: TileType) -> bool {
+      return tile_type == TileType::Wall;
   }
 }
 
