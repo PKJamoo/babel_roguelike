@@ -39,6 +39,10 @@ impl Map {
                  visited: HashSet::new()};
   }
 
+  pub fn can_move_to(&self, x: i32, y: i32) -> bool {
+      return self.terrain[self.get_index(x, y)] != TileType::Wall;
+  }
+
   pub fn get_tiles_in_view(&mut self, x: i32, y: i32) -> HashSet<Tile> {
       let mut in_view = HashSet::new();
       // clamp values between [0, width/height)
