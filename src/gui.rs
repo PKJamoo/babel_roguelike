@@ -3,7 +3,7 @@ use tcod::console::*;
 use specs::{World, WorldExt, Entity};
 use super::{SCREEN_HEIGHT, SCREEN_WIDTH, Map};
 use crate::map::TileType;
-use crate::components::{Position};
+use crate::components::{Position, Sprite};
 
 
 
@@ -83,24 +83,29 @@ impl Tcod {
           self.con.put_char_ex(tile.x, tile.y, tile_char, tile_color, BLACK);
         }
 
-        let player_id = ecs.fetch::<Entity>();
+        // retrieve storages from ecs
         let pos_store = ecs.read_storage::<Position>();
-        let player_pos = pos_store.get(*player_id);
-        if let Some(player_pos) = player_pos {
-            for tile in (*current_level).get_tiles_in_view(player_pos.x, player_pos.y).iter() {
-              let tile_char: char;
-              let tile_color: Color;
-              match tile.tile_type {
-                  TileType::Ground => {tile_char = '.'; tile_color = LIGHTEST_GREY},
-                  TileType::Water => {tile_char = '.'; tile_color = LIGHT_BLUE},
-                  TileType::Wall => {tile_char = 'X'; tile_color = WHITE},
-              }
-              self.con.put_char_ex(tile.x, tile.y, tile_char, tile_color, BLACK);
-            }
+        let sprite_store = ecs.read_storage::<Sprite>();  
 
-            // Render player
-            self.con.put_char(player_pos.x, player_pos.y, '@', BackgroundFlag::None);
+        for tile in (*current_level).visible.iter() {
+            let tile_char: char;
+            let tile_color: Color;
+            match tile.tile_type {
+                TileType::Ground => {tile_char = '.'; tile_color = LIGHTEST_GREY},
+                TileType::Water => {tile_char = '.'; tile_color = LIGHT_BLUE},
+                TileType::Wall => {tile_char = 'X'; tile_color = WHITE},
+            }
+            self.con.put_char_ex(tile.x, tile.y, tile_char, tile_color, BLACK);
         }
+
+            // Render visible entities
+            use specs::Join;
+            for (pos, sprite) in (&pos_store, &sprite_store).join() {
+                // TODO: Fix Map data structure to separate tiles from type
+                if (*current_level).tile_in_view(pos.x, pos.y){
+                self.con.put_char_ex(pos.x, pos.y, sprite.sprite, sprite.color, BLACK);
+                }
+            }
 
 
         blit( &self.con, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT),

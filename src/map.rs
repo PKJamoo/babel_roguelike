@@ -9,7 +9,8 @@ pub struct Map {
     width: i32,
     height: i32,
     terrain: Vec<TileType>,
-    pub visited: HashSet<Tile>
+    pub visited: HashSet<Tile>,
+    pub visible: HashSet<Tile>
 }
 
 // TODO: handle maps that are bigger than the screen width (i.e. handle wrapping)
@@ -36,11 +37,16 @@ impl Map {
       return Map{width: width,
                  height: height,
                  terrain: terrain,
-                 visited: HashSet::new()};
+                 visited: HashSet::new(),
+                 visible: HashSet::new()};
   }
 
   pub fn can_move_to(&self, x: i32, y: i32) -> bool {
       return self.terrain[self.get_index(x, y)] != TileType::Wall;
+  }
+
+  pub fn tile_in_view(&self, x: i32, y: i32) -> bool{
+    return self.visible.contains(&Tile{x: x, y: y, tile_type: TileType::Ground})
   }
 
   pub fn get_tiles_in_view(&mut self, x: i32, y: i32) -> HashSet<Tile> {
@@ -61,9 +67,6 @@ impl Map {
           self.find_visible_tiles_between(x, y, col, row_end, VIEW_DIST_SQ, &mut in_view);
       }
 
-      for tile in in_view.iter() {
-          self.visited.insert(*tile);
-      }
       return in_view;
   }
 
@@ -110,14 +113,15 @@ impl Map {
   }
 }
 
-#[derive(Copy, Clone, Hash, Eq, PartialEq)]
+#[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]
 pub struct Tile {
     pub x: i32,
     pub y: i32,
     pub tile_type: TileType,
 }
 
-#[derive(Copy, Clone, Hash, Eq, PartialEq)]
+
+#[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]
 pub enum TileType {
     Ground,
     Water,
