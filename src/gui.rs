@@ -1,6 +1,6 @@
 use tcod::colors::*;
 use tcod::console::*;
-use specs::{World, WorldExt, Entity};
+use specs::{World, WorldExt};
 use super::{SCREEN_HEIGHT, SCREEN_WIDTH, Map};
 use crate::map::TileType;
 use crate::components::{Position, Sprite};
@@ -71,7 +71,7 @@ impl Tcod {
         self.con.clear();
 
         // Render map
-        let mut current_level = ecs.write_resource::<Map>();
+        let current_level = ecs.write_resource::<Map>();
         for tile in current_level.visited.iter() {
           let tile_char: char;
           let tile_color: Color;

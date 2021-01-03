@@ -13,7 +13,7 @@ use visionsystem::VisionSystem;
 
 use specs::{World, WorldExt, Builder, Entity, RunNow};
 use components::{Position, Sprite, Actor, Speed, Vision, Player};
-use map::{Map, Tile};
+use map::{Map};
 use tcod::colors::*;
 use rand::prelude::*;
 use std::collections::HashSet;
@@ -76,16 +76,20 @@ fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, ecs: &mut World){
         },
         RunState::PlayerTurn => {
             let player_id = ecs.fetch::<Entity>();
+            let map = ecs.fetch::<Map>();
             let act = player::read_keys(tcod, *player_id);
             // TODO: this should be handled by the event queue most likely
             if let actions::Action::MoveAction { id: _, x, y } = act {
                 let mut pos_store = ecs.write_storage::<Position>();
                 let player_pos = pos_store.get_mut(*player_id);
                 if let Some(player_pos) = player_pos{
+                    if map.can_move_to(player_pos.x + x, player_pos.y + y){
                     player_pos.x += x;
                     player_pos.y += y;
+                    *state = RunState::ActiveGame;
+                    }
                 }
-                *state = RunState::ActiveGame;
+
             }
         },
         RunState::AITurn => {},
