@@ -6,43 +6,37 @@ const VIEW_DIST: i32 = 9;
 const VIEW_DIST_SQ: i32 = VIEW_DIST * VIEW_DIST;
 
 pub struct Map {
-    width: i32,
-    height: i32,
+    pub width: i32,
+    pub height: i32,
     terrain: Vec<TileType>,
     pub visited: HashSet<Tile>,
-    pub visible: HashSet<Tile>
+    pub visible: HashSet<Tile>,
+    pub blocked: Vec<bool>
 }
 
 // TODO: handle maps that are bigger than the screen width (i.e. handle wrapping)
 impl Map {
   pub fn new(width: i32, height: i32) -> Map {
-      let mut terrain = Vec::with_capacity((width * height).try_into().unwrap());
+      let mut terrain = vec![TileType::Ground; (width * height) as usize];
       for j in 0..height {
           for i in 0..width {
-              let tile: TileType;
               if i == 0 || j == 0 || i == width - 1 || j == height - 1 {
-                  tile = TileType::Wall;
+                terrain[(i + j*width) as usize] = TileType::Wall;
               } else if j == 18 && (i == 38 || i == 39 || i == 40 || i == 41 || i == 42) {
-                  tile = TileType::Wall;
+                terrain[(i + j*width) as usize] = TileType::Wall;
               } else if j == 32 && (i == 38 || i == 39 || i == 41 || i == 42) {
-                  tile = TileType::Wall;
+                terrain[(i + j*width) as usize] = TileType::Wall;
               } else if (i - 20).pow(2) + (j - 20).pow(2) < 100 {
-                  tile = TileType::Water;
-              } else {
-                  tile = TileType::Ground;
+                terrain[(i + j*width) as usize] = TileType::Water;
               }
-              terrain.push(tile);
           }
       }
       return Map{width: width,
                  height: height,
                  terrain: terrain,
                  visited: HashSet::new(),
-                 visible: HashSet::new()};
-  }
-
-  pub fn can_move_to(&self, x: i32, y: i32) -> bool {
-      return self.terrain[self.get_index(x, y)] != TileType::Wall;
+                 visible: HashSet::new(),
+                 blocked: vec![false; (width * height) as usize]};
   }
 
   pub fn tile_in_view(&self, x: i32, y: i32) -> bool{
@@ -111,6 +105,22 @@ impl Map {
   fn tile_blocks_vision(&self, tile_type: TileType) -> bool {
       return tile_type == TileType::Wall;
   }
+
+  // sets blocked vec based on wall locations, entity locations are set in the mapblocking system
+  pub fn set_tile_blocked(&mut self) {
+    for (i, tile) in self.terrain.iter().enumerate() {
+        if tile == &TileType::Wall || tile == &TileType::Water {
+            self.blocked[i] = true;
+        }
+        else {
+            self.blocked[i] = false;
+        }
+    }
+  }
+  pub fn can_move_to(&self, x: i32, y: i32) -> bool {
+    return !self.blocked[(x + y*self.width) as usize];
+}
+
 }
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]

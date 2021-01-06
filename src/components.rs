@@ -1,12 +1,12 @@
 use crate::map::{Tile};
 
-use specs::{Component, VecStorage};
+use specs::{Component, VecStorage, NullStorage};
 use tcod::colors::Color;
 use std::collections::HashSet;
 
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
-pub struct Player {}
+#[derive(Component, Debug, Default)]
+#[storage(NullStorage)]
+pub struct Player;
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
@@ -41,3 +41,7 @@ pub struct Vision {
     // TODO: Make vision types enum/struct(?) i.e. normal, infrared, xray, etc
     pub field_of_vision: HashSet<Tile>
 }
+
+#[derive(Component, Debug, Default)]
+#[storage(NullStorage)]
+pub struct Blocking;

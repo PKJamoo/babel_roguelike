@@ -2,6 +2,10 @@ use crate::components::{Vision, Position, Player};
 use crate::map::Map;
 use specs::{System, ReadStorage, WriteStorage, WriteExpect, Entities};
 
+/*
+Calculate field of vision for all active entities
+*/
+
 pub struct VisionSystem;
 
 impl<'a> System<'a> for VisionSystem {

@@ -1,6 +1,10 @@
 use super::{Actor, Speed};
 use specs::{System, ReadStorage, WriteStorage, Entities, Write, Entity};
 
+/*
+Calculate and determine which entities will act on each tick
+*/
+
 pub struct TurnSystem;
 
 impl<'a> System<'a> for TurnSystem {

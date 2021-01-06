@@ -10,9 +10,11 @@ mod turnsystem;
 use turnsystem::TurnSystem;
 mod visionsystem;
 use visionsystem::VisionSystem;
+mod mapblockingsystem;
+use mapblockingsystem::MapBlockingSystem;
 
 use specs::{World, WorldExt, Builder, Entity, RunNow};
-use components::{Position, Sprite, Actor, Speed, Vision, Player};
+use components::{Position, Sprite, Actor, Speed, Vision, Player, Blocking};
 use map::{Map};
 use tcod::colors::*;
 use rand::prelude::*;
@@ -43,6 +45,9 @@ fn run_systems(ecs: &mut World) {
 
     let mut vision_system = VisionSystem{};
     vision_system.run_now(ecs);
+
+    let mut map_blocking_system = MapBlockingSystem{};
+    map_blocking_system.run_now(ecs);
 
     ecs.maintain();
 
@@ -117,6 +122,7 @@ fn main() {
     ecs.register::<Actor>();
     ecs.register::<Speed>();
     ecs.register::<Vision>();
+    ecs.register::<Blocking>();
 
     //create player entity
     let player_entity = ecs.create_entity().with(Actor{action_points:0, threshold: 5})
@@ -124,14 +130,18 @@ fn main() {
                                             .with(Sprite{sprite: '@', color: WHITE })
                                             .with(Speed{speed: 1})
                                             .with(Vision{field_of_vision: HashSet::new()})
-                                            .with(Player{}).build();
+                                            .with(Player{})
+                                            .with(Blocking{}).build();
     
     // create test monstar
+    for _ in 0.. 10 {
     ecs.create_entity().with(Actor{action_points: 0, threshold: 5})
                        .with(Position{x: rng.gen_range(0..(SCREEN_WIDTH - 1)), y: rng.gen_range(0..(SCREEN_HEIGHT - 1))})
                        .with(Sprite{sprite: 'o', color: RED})
                        .with(Vision{field_of_vision: HashSet::new()})
-                       .with(Speed{speed: 2}).build();
+                       .with(Speed{speed: 2})
+                       .with(Blocking{}).build();
+    }
 
     // create gamestate resources
     let main_menu = gui::Menu::new(3, vec_of_strings!["New Game", "Load Game", "Options", "Quit"]);
