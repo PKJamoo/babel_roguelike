@@ -1,4 +1,3 @@
-use std::convert::TryInto;
 use std::cmp;
 use std::collections::HashSet;
 
@@ -75,7 +74,7 @@ impl Map {
     let mut err = dx + dy;
     let mut e2;
 
-    while self.get_distance_sq(start_x, start_y, x0, y0) < length_sq {
+    while self.get_distance_sq(start_x, start_y, x0, y0) < length_sq as f32 {
         let tile_type = self.terrain[self.get_index(x0, y0)];
         visible.insert(Tile{x: x0, y: y0, tile_type: tile_type});
         if self.tile_blocks_vision(tile_type) || (x0 == x1 && y0 == y1) {
@@ -93,13 +92,15 @@ impl Map {
     }
   }
 
-  fn get_distance_sq(&self, x0: i32, y0: i32, x1: i32, y1: i32) -> i32 {
+  pub fn get_distance_sq(&self, x0: i32, y0: i32, x1: i32, y1: i32) -> f32 {
       // Euclidean distance
-      return (x0 - x1).pow(2) + (y0 - y1).pow(2);
+    let dx = (cmp::max(x0, x1) - cmp::min(x0, x1)) as f32;
+    let dy = (cmp::max(y0, y1) - cmp::min(y0, y1)) as f32;
+      return (dx * dx) + (dy * dy);
   }
 
-  fn get_index(&self, x0: i32, y0: i32) -> usize {
-      return (x0 + y0 * self.width).try_into().unwrap();
+  pub fn get_index(&self, x0: i32, y0: i32) -> usize {
+      return (y0 as usize * self.width as usize) + x0 as usize;
   }
 
   fn tile_blocks_vision(&self, tile_type: TileType) -> bool {
@@ -117,8 +118,39 @@ impl Map {
         }
     }
   }
-  pub fn can_move_to(&self, x: i32, y: i32) -> bool {
-    return !self.blocked[(x + y*self.width) as usize];
+
+pub fn is_exit_valid(&self, x:i32, y:i32) -> bool {
+    if x < 1 || x > self.width-1 || y < 1 || y > self.height-1 { return false; }
+    let idx = self.get_index(x, y);
+    !self.blocked[idx]
+}
+
+pub fn get_pathing_distance(&self, idx1: usize, idx2: usize) -> f32 {
+    let w = self.width as usize;
+    let p1 = (idx1 % w, idx1 / w);
+    let p2 = (idx2 % w, idx2 / w);
+    self.get_distance_sq(p1.0 as i32, p1.1 as i32, p2.0 as i32, p2.1 as i32)
+}
+
+pub fn get_available_exits(&self, idx:usize) -> Vec<(usize, f32)> {
+    let mut exits = Vec::new();
+    let x = idx as i32 % self.width;
+    let y = idx as i32 / self.width;
+    let w = self.width as usize;
+
+    // Cardinal directions
+    if self.is_exit_valid(x-1, y) { exits.push((idx-1, 1.0)) };
+    if self.is_exit_valid(x+1, y) { exits.push((idx+1, 1.0)) };
+    if self.is_exit_valid(x, y-1) { exits.push((idx-w, 1.0)) };
+    if self.is_exit_valid(x, y+1) { exits.push((idx+w, 1.0)) };
+
+    // Diagonals
+    if self.is_exit_valid(x-1, y-1) { exits.push(((idx-w)-1, 1.45)); }
+    if self.is_exit_valid(x+1, y-1) { exits.push(((idx-w)+1, 1.45)); }
+    if self.is_exit_valid(x-1, y+1) { exits.push(((idx+w)-1, 1.45)); }
+    if self.is_exit_valid(x+1, y+1) { exits.push(((idx+w)+1, 1.45)); }
+
+    exits
 }
 
 }

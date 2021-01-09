@@ -1,8 +1,11 @@
 mod player;
 mod gui;
 mod map;
+use map::{Map};
 mod components;
 mod actions;
+mod pathfinding;
+use pathfinding::astar_search;
 #[macro_use]
 mod lib;
 
@@ -15,7 +18,7 @@ use mapblockingsystem::MapBlockingSystem;
 
 use specs::{World, WorldExt, Builder, Entity, RunNow};
 use components::{Position, Sprite, Actor, Speed, Vision, Player, Blocking};
-use map::{Map};
+
 use tcod::colors::*;
 use rand::prelude::*;
 use std::collections::HashSet;
@@ -26,9 +29,10 @@ const SCREEN_WIDTH: i32 = 80;
 const SCREEN_HEIGHT: i32 = 50;
 
 pub enum RunState {
+    Tick,
+    ActiveTurn,
     PlayerTurn,
-    AITurn,
-    ActiveGame,
+    AITurn{id: Entity},
     Inventory,
     MainMenu,
     NewGame,
@@ -64,21 +68,38 @@ fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, ecs: &mut World){
                         // opening cinematic
                         // character select
                         // start game
-                        *state = RunState::ActiveGame;
+                        *state = RunState::Tick;
         },
-        RunState::ActiveGame  => {
+
+        // run all once per frame systems, etc
+        RunState::Tick => {
             run_systems(ecs);
             tcod.render_game(ecs);
+            *state = RunState::ActiveTurn;
 
+        },
+        // work through all the turns that occur on a single tick
+        RunState::ActiveTurn  => {
+            tcod.render_game(ecs);
             let player_id = ecs.fetch::<Entity>();
             let mut turn_queue = ecs.write_resource::<Vec<Entity>>();
-            while !((*turn_queue).is_empty()) {
-                if (*turn_queue).remove(0) == (*player_id) {
+
+            // branch to whatever entity type's turn it is or return to tick state
+            let ent = (*turn_queue).pop();
+            match ent {
+                Some(ent) => {
+                    if ent == (*player_id) {
                     *state = RunState::PlayerTurn;
-                }
+                    }
+                    else {
+                    *state = RunState::AITurn{id: ent};
+                    }
+                },
+                None => {*state = RunState::Tick;}
 
             }
         },
+        // handle player input, and change states
         RunState::PlayerTurn => {
             let player_id = ecs.fetch::<Entity>();
             let map = ecs.fetch::<Map>();
@@ -88,16 +109,38 @@ fn game_loop(state: &mut RunState, tcod: &mut gui::Tcod, ecs: &mut World){
                 let mut pos_store = ecs.write_storage::<Position>();
                 let player_pos = pos_store.get_mut(*player_id);
                 if let Some(player_pos) = player_pos{
-                    if map.can_move_to(player_pos.x + x, player_pos.y + y){
-                    player_pos.x += x;
-                    player_pos.y += y;
-                    *state = RunState::ActiveGame;
+                    if map.is_exit_valid(player_pos.x + x, player_pos.y + y){
+                        player_pos.x += x;
+                        player_pos.y += y;
+                        // return to turn queue
+                        *state = RunState::ActiveTurn;
                     }
                 }
 
             }
         },
-        RunState::AITurn => {},
+        // handle any ai entities turns
+        RunState::AITurn{id} => {
+            let player = ecs.fetch::<Entity>();
+            let map = ecs.write_resource::<Map>();
+            let mut pos_store = ecs.write_storage::<Position>();
+            let player_pos = pos_store.get(*player);
+            if let Some(player_pos) = player_pos{
+                // reassign variable to drop borrow of pos_store
+                let player_pos = (player_pos.x, player_pos.y);
+                let mons_pos = pos_store.get_mut(*id);
+                if let Some(mons_pos) = mons_pos {
+                    if map.get_distance_sq(mons_pos.x, mons_pos.y, player_pos.0, player_pos.1) > 2.0 {
+                        let path = astar_search(map.get_index(mons_pos.x, mons_pos.y), map.get_index(player_pos.0, player_pos.1), &map);
+                        if path.success && path.steps.len()>1 {
+                            mons_pos.x = path.steps[1] as i32 % map.width;
+                            mons_pos.y = path.steps[1] as i32 / map.width;
+                        }
+                    }
+                }
+            }
+            *state = RunState::ActiveTurn;
+        },
         RunState::Inventory  => {},
         RunState::LoadGame => {},
         RunState::SaveGame  => {},
@@ -130,18 +173,15 @@ fn main() {
                                             .with(Sprite{sprite: '@', color: WHITE })
                                             .with(Speed{speed: 1})
                                             .with(Vision{field_of_vision: HashSet::new()})
-                                            .with(Player{})
-                                            .with(Blocking{}).build();
+                                            .with(Player{}).build();
     
     // create test monstar
-    for _ in 0.. 10 {
     ecs.create_entity().with(Actor{action_points: 0, threshold: 5})
-                       .with(Position{x: rng.gen_range(0..(SCREEN_WIDTH - 1)), y: rng.gen_range(0..(SCREEN_HEIGHT - 1))})
+                       .with(Position{x: SCREEN_WIDTH/2, y: SCREEN_HEIGHT/2 + 5})
                        .with(Sprite{sprite: 'o', color: RED})
                        .with(Vision{field_of_vision: HashSet::new()})
                        .with(Speed{speed: 2})
                        .with(Blocking{}).build();
-    }
 
     // create gamestate resources
     let main_menu = gui::Menu::new(3, vec_of_strings!["New Game", "Load Game", "Options", "Quit"]);
