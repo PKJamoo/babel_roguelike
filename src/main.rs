@@ -176,11 +176,11 @@ fn main() {
                                             .with(Player{}).build();
     
     // create test monstar
-    ecs.create_entity().with(Actor{action_points: 0, threshold: 5})
+    ecs.create_entity().with(Actor{action_points: 0, threshold: 10})
                        .with(Position{x: SCREEN_WIDTH/2, y: SCREEN_HEIGHT/2 + 5})
                        .with(Sprite{sprite: 'o', color: RED})
                        .with(Vision{field_of_vision: HashSet::new()})
-                       .with(Speed{speed: 2})
+                       .with(Speed{speed: 1})
                        .with(Blocking{}).build();
 
     // create gamestate resources
